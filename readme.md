@@ -14,4 +14,4 @@ This will create a new call in Manage Engine. Instead, have them email "external
 Written with Python 3.5
 
 ### Running
-Use `pyinstaller outlook_sdplus.spec` to create a binary executable, then setup a simple windows task scheduler to call the binary every 5 minutes.
+Use `pyinstaller outlook_manage_engine.spec` to create a binary executable, then setup a simple windows task scheduler to call the binary every 5 minutes.
