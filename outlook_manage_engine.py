@@ -53,10 +53,10 @@ class OutlookSDPlus:
                     print(sdplus_found_number + ': sdplus, body')
                     if self.sdplus_valid(sdplus_found_number):
                         self.send_move(message, ' ##' + sdplus_found_number + '##')
-                # sdplus, body, remove #s
+                # sdplus, body, remove_no #s
                 elif re.search(self.sdplus_csc, message.Body.replace('#', '')):
                     sdplus_found_number = re.search(self.sdplus_csc, message.Body.replace('#', '')).group(1)
-                    print(sdplus_found_number + ': sdplus, body, remove #s')
+                    print(sdplus_found_number + ': sdplus, body, remove_no #s')
                     if self.sdplus_valid(sdplus_found_number):
                         self.send_move(message, ' ##' + sdplus_found_number + '##')
                 else:
@@ -99,7 +99,7 @@ class OutlookSDPlus:
         """
         # Remove my default signature
         # https://msdn.microsoft.com/en-us/library/dd492012(v=office.12).aspx
-        print('Attempting to remove signature.')
+        print('Attempting to remove_no signature.')
         if mail_object.BodyFormat == 1:  # Plain Text:
             find_text = '-----Original Message-----'
             mail_object.Body = mail_object.Body[mail_object.Body.find(find_text) + len(find_text):]
@@ -114,7 +114,7 @@ class OutlookSDPlus:
                     # assumes you will later call active_inspector.Close(0) (necessary if not calling .Display())
                     print('Signature removal success.')
             except pywintypes.com_error:
-                print('Failed to remove signature.')
+                print('Failed to remove_no signature.')
         return
 
     @staticmethod

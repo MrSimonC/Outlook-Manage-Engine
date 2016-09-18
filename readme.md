@@ -1,8 +1,10 @@
 # Outlook Mail Traverser for Manage Engine
-### Traverse an Outlook shared mailbox,  searching for a regular expression pattern in emails identifying a local reference number for the [Manage Engine Helpdesk System](https://www.manageengine.com), confirm local reference exists via API, then forward onto a monitored email address, putting the local reference number in ##s.
+## Background
+Traverse an Outlook shared mailbox,  searching for a regular expression pattern in emails identifying a local reference number for the [Manage Engine Helpdesk System](https://www.manageengine.com), confirm local reference exists via API, then forward onto a monitored email address, putting the local reference number in ##s.
 
 If you have a supplier with a rigid bespoke call logging system which can't invoke the ##s in email subject replies (which is what your local helpdesk system uses to identify email call responses), then have the supplier send into one shared mailbox, traverse each incoming email for the local reference and forward on to your Manage Engine system whilst checking the local ref number validity.
 
+## Usage
 Example:</br>
 Imagine your company owns a Manage Engine helpdesk system which identifies call responses with the notation ##local_reference## in the subject.</br>
 e.g.  Call reference: 12345</br>
