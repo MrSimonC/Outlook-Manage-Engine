@@ -4,15 +4,16 @@ import re
 import sys
 import win32com.client
 from custom_modules.sdplus_api_rest import API
-# from custom_modules.slack import API as SlackAPI
-__version__ = '0.71'
+from slackclient import SlackClient
+__version__ = '0.91'
 # 0.3 - Updated the signature remover and inserted cssc@ line 27/Jan/16
 # 0.4 - Added ActiveInspector.Close(0) to save changes else they're abandoned if you don't call .Display()
 # 0.5 - Changed Outlook inbox parser to for no in range(inbox.items.count-1, -1, -1)
 # 0.6 - Introduced searching for HD number and setting sdplus' supplier ref field
 # 0.6 - Added functionality which looks for no assignee, if true, sends slack notification
 # 0.7 - Moved API key to env variable
-# 0.71 - Removed Slack hooks
+# 0.8 - Updated use of new sdplus_api
+# 0.9 - Updated slack call to be native (removing custom_module)
 
 
 class OutlookSDPlus:
@@ -26,13 +27,13 @@ class OutlookSDPlus:
         self.inbox = None
         self.sdplus_api = None
         self.sdplus_api_key = os.environ['SDPLUS_ADMIN']
-        self.sdplus_api_url = 'http://sdplus/sdpapi/request/'
+        self.sdplus_api_url = 'http://sdplus/sdpapi/'
         self.sdplus_clean = r'(?:##)(\d{6})(?:##)'  # clean sdplus number is group 1 as group(0)=entire match
         self.sdplus_csc = r'(?:NBNT|NBNTSD)(\d{6})'  # clean sdplus number is group 1
         self.hd_ref = r'(?:HD0*)(\d{7}\b)'  # clean 7 digit HD number is group 1 (match HD, 0 or infinite zeros, ref)
         self.service_desk_to = 'servicedeskplus@nbt.nhs.uk'
         self.destination_folder_name = 'Processed'
-        # self.slack = SlackAPI()
+        self.slack = SlackClient(os.environ['SLACK_LORENZOBOT'])
 
     def process_emails(self):
         """
@@ -59,7 +60,7 @@ class OutlookSDPlus:
                     print(sdplus_found_number + ': sdplus clean, subject')
                     if self.sdplus_valid(sdplus_found_number):
                         self.update_sdplus(sdplus_found_number, 'Supplier Ref', hd)
-                        # self.slack_warn_if_not_assigned(sdplus_found_number)
+                        self.slack_warn_if_not_assigned(sdplus_found_number)
                         self.send_move(message)
                 # sdplus, subject
                 elif re.search(self.sdplus_csc, message.Subject):
@@ -67,7 +68,7 @@ class OutlookSDPlus:
                     print(sdplus_found_number + ': sdplus, subject')
                     if self.sdplus_valid(sdplus_found_number):
                         self.update_sdplus(sdplus_found_number, 'Supplier Ref', hd)
-                        # self.slack_warn_if_not_assigned(sdplus_found_number)
+                        self.slack_warn_if_not_assigned(sdplus_found_number)
                         self.send_move(message, ' ##' + sdplus_found_number + '##')
                 # sdplus, body
                 elif re.search(self.sdplus_csc, message.Body):
@@ -75,7 +76,7 @@ class OutlookSDPlus:
                     print(sdplus_found_number + ': sdplus, body')
                     if self.sdplus_valid(sdplus_found_number):
                         self.update_sdplus(sdplus_found_number, 'Supplier Ref', hd)
-                        # self.slack_warn_if_not_assigned(sdplus_found_number)
+                        self.slack_warn_if_not_assigned(sdplus_found_number)
                         self.send_move(message, ' ##' + sdplus_found_number + '##')
                 # sdplus, body, remove_no #s
                 elif re.search(self.sdplus_csc, message.Body.replace('#', '')):
@@ -83,13 +84,14 @@ class OutlookSDPlus:
                     print(sdplus_found_number + ': sdplus, body, remove_no #s')
                     if self.sdplus_valid(sdplus_found_number):
                         self.update_sdplus(sdplus_found_number, 'Supplier Ref', hd)
-                        # self.slack_warn_if_not_assigned(sdplus_found_number)
+                        self.slack_warn_if_not_assigned(sdplus_found_number)
                         self.send_move(message, ' ##' + sdplus_found_number + '##')
                 else:
                     print("Can't work out sdplus number")
 
     def sdplus_valid(self, sdplus_ref):
-        result = self.sdplus_api.send(sdplus_ref, 'GET_REQUEST')
+        # result = self.sdplus_api.send(sdplus_ref, 'GET_REQUEST')
+        result = self.sdplus_api.request_view(sdplus_ref)
         if result['response_status'] == 'Success':
             return True
         else:
@@ -103,30 +105,33 @@ class OutlookSDPlus:
             return re.search(self.hd_ref, message.Body).group(1)
 
     def update_sdplus(self, sdplus_ref, field, value):
-        call_current_values = self.sdplus_api.send(sdplus_ref, 'GET_REQUEST')
+        # call_current_values = self.sdplus_api.send(sdplus_ref, 'GET_REQUEST')
+        call_current_values = self.sdplus_api.request_view(sdplus_ref)
         if field in call_current_values or field.lower() in call_current_values:
-            response = self.sdplus_api.send(sdplus_ref, 'EDIT_REQUEST', {field: value})
+            # response = self.sdplus_api.send(sdplus_ref, 'EDIT_REQUEST', {field: value})
+            response = self.sdplus_api.request_edit(sdplus_ref, {field: value})
             if response['response_status'] == 'Success':
                 return True
             else:
                 return False
 
-    # def _is_assigned(self, sdplus):
-    #     # Check if sdplus call has an Assignee
-    #     call_details = self.sdplus_api.send(sdplus, 'GET_REQUEST')
-    #     call_details = dict((k.lower(), v) for k, v in call_details.items())
-    #     if call_details['technician']:
-    #         return True
-    #     else:
-    #         return False
-    #
-    # def slack_warn_if_not_assigned(self, sdplus_ref):
-    #     if not self._is_assigned(sdplus_ref):
-    #         sdplus_href = '<http://sdplus/WorkOrder.do?woMode=viewWO&woID={sdplus_ref}|{sdplus_ref}>'\
-    #             .format(sdplus_ref=sdplus_ref)
-    #         # Send message to backoffice group, with @mitch, @simon, @paul
-    #         self.slack.send('G1FBB4L68', 'Hey <@U1FBYK4BZ>, <@U1F4X362D>, <@U1FA6DMFV> - CSC have responded '
-    #                                      'to SDPlus {0}, but this is currently unassigned...'.format(sdplus_href))
+    def _is_assigned(self, sdplus):
+        # Check if sdplus call has an Assignee
+        call_details = self.sdplus_api.request_view(sdplus)
+        call_details = dict((k.lower(), v) for k, v in call_details.items())
+        if call_details['technician']:
+            return True
+        else:
+            return False
+
+    def slack_warn_if_not_assigned(self, sdplus_ref):
+        if not self._is_assigned(sdplus_ref):
+            sdplus_href = '<http://sdplus/WorkOrder.do?woMode=viewWO&woID={sdplus_ref}|{sdplus_ref}>'\
+                .format(sdplus_ref=sdplus_ref)
+            # Send message to backoffice group, - was @mitch, @simon, @paul (<@U1FBYK4BZ>, <@U1F4X362D>, <@U1FA6DMFV>)
+            message = 'Hey guys - CSC have responded to SDPlus {0}, but this is currently unassigned...'\
+                .format(sdplus_href)
+            self.slack.api_call('chat.postMessage', as_user=True, channel='backoffice', text=message)
 
     def send_move(self, mail_item, append_to_subject=''):
         new_mail = mail_item.Forward()
@@ -194,13 +199,15 @@ class OutlookSDPlus:
 
 
 if __name__ == '__main__':
+    error_text = 'Needed environment variable "SDPLUS_ADMIN" not found. Please correct using "setx SDPLUS_ADMIN ' \
+                 '<insert your own SDPLUS key here>" in a command line.\n'
     try:
         if not os.environ['SDPLUS_ADMIN']:
-            print('Needed environment variable not found')
+            print(error_text)
             sys.exit(1)  # exit as error
     except KeyError:
-        print('Needed environment variable not found')
-        sys.exit(1)  # exit as error
+        print(error_text)
+        sys.exit(1)
 
     o = OutlookSDPlus()
     o.process_emails()

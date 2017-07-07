@@ -1,3 +1,5 @@
 .idea/
 build/
 custom_modules/__pycache__/
+.outlook
+outlook_sdplus_documentation.txt
