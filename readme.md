@@ -16,4 +16,9 @@ This will create a new call in Manage Engine. Instead, have them email "external
 Written with Python 3.5
 
 ### Running
+Set the needed Service Desk Plus API key environment variable with `setx SDPLUS_API <Enter your API key here>`
+
+in "binaries" folder, v.91 communicates with slack API via an API Token which can be obtained by: https://it-nbt.slack.com/services/ (or Browse Apps  > Custom Integrations  > Bots  > Edit configuration).  
+This program will look for an API key in a windows variable under name "SLACK_LORENZOBOT". You can set this on windows with `setx SLACK_LORENZOBOT <insert your own SDPLUS key here>` in a command line.
+
 Use `pyinstaller outlook_manage_engine.spec` to create a binary executable, then setup a simple windows task scheduler to call the binary every 5 minutes.

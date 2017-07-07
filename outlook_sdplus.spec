@@ -4,7 +4,7 @@ block_cipher = None
 data_files = Tree(r'C:\Python35\Lib\site-packages\requests', prefix='requests')
 
 a = Analysis(['outlook_sdplus.py'],
-             pathex=['C:\\simon files\\compliation zone\\outlook sdplus'],
+             pathex=['H:\Coding\github\Outlook-Manage-Engine'],
              binaries=None,
              datas=None,
              hiddenimports=[],
@@ -26,4 +26,4 @@ exe = EXE(pyz,
           debug=False,
           strip=False,
           upx=True,
-          console=False )
+          console=True )
